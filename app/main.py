@@ -206,9 +206,7 @@ async def root():
     return {
         "project": "dmca-light-api",
         "version": "0.1.0",
-        "description": (
-            "Educational REST API for dark matter exciton calculations"
-        ),
+        "description": "Educational API for dark matter exciton calculations",
         "docs": "/docs",
         "health": "/api/v1/health",
     }
