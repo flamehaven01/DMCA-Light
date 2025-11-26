@@ -7,6 +7,7 @@ Version: 0.1.0
 [!] CRITICAL: This file is auto-generated. Do not edit manually.
     To modify tests, update the Anvil specification YAML and regenerate.
 """
+
 import pytest
 from datetime import datetime
 from pydantic import ValidationError
@@ -144,12 +145,6 @@ class TestMaterial:
         with pytest.raises(ValidationError):
             Material(**data)
 
-
-
-
-
-
-
     def test_material_xss_prevention(self):
         """Test Material XSS attack prevention via input sanitization"""
         # XSS payloads to test
@@ -175,8 +170,8 @@ class TestMaterial:
             # Should either sanitize or raise ValidationError
             try:
                 instance = Material(**data)
-                # Verify sanitization occurred (whitespace stripped, no null bytes)
-                assert '\x00' not in instance.name
+                # Verify sanitization (whitespace stripped, no null bytes)
+                assert "\x00" not in instance.name
                 assert instance.name.strip() == instance.name
                 # Verify not just whitespace
                 if payload.strip():
@@ -200,8 +195,8 @@ class TestMaterial:
             # Should either sanitize or raise ValidationError
             try:
                 instance = Material(**data)
-                # Verify sanitization occurred (whitespace stripped, no null bytes)
-                assert '\x00' not in instance.formula
+                # Verify sanitization (whitespace stripped, no null bytes)
+                assert "\x00" not in instance.formula
                 assert instance.formula.strip() == instance.formula
                 # Verify not just whitespace
                 if payload.strip():
@@ -209,7 +204,6 @@ class TestMaterial:
             except ValidationError:
                 # Validation rejection is also acceptable
                 pass
-
 
     def test_material_null_byte_prevention(self):
         """Test Material null byte injection prevention"""
@@ -241,7 +235,6 @@ class TestMaterial:
             Material(**data)
         assert "null bytes" in str(exc_info.value).lower()
 
-
     def test_material_whitespace_only_prevention(self):
         """Test Material whitespace-only string prevention"""
         data = {
@@ -271,7 +264,6 @@ class TestMaterial:
         with pytest.raises(ValidationError) as exc_info:
             Material(**data)
         assert "whitespace" in str(exc_info.value).lower()
-
 
 
 class TestExcitonResult:
@@ -370,11 +362,6 @@ class TestExcitonResult:
         with pytest.raises(ValidationError):
             ExcitonResult(**data)
 
-
-
-
-
-
     def test_excitonresult_foreign_key_validation(self):
         """Test ExcitonResult foreign key validation"""
         # Valid foreign key for material_id
@@ -400,19 +387,13 @@ class TestExcitonResult:
             ExcitonResult(**data_invalid)
 
 
-
-
-
 class TestResponseModels:
     """Test cases for utility response models"""
 
     def test_paginated_response(self):
         """Test PaginatedResponse model"""
         response = PaginatedResponse(
-            total=100,
-            page=1,
-            page_size=20,
-            items=[{"id": 1}, {"id": 2}]
+            total=100, page=1, page_size=20, items=[{"id": 1}, {"id": 2}]
         )
 
         assert response.total == 100
@@ -426,7 +407,7 @@ class TestResponseModels:
             error="ValidationError",
             message="Invalid input",
             details={"field": "email"},
-            request_id="req-123"
+            request_id="req-123",
         )
 
         assert response.error == "ValidationError"
@@ -437,9 +418,7 @@ class TestResponseModels:
     def test_success_response(self):
         """Test SuccessResponse model"""
         response = SuccessResponse(
-            success=True,
-            message="Operation completed",
-            data={"id": 1}
+            success=True, message="Operation completed", data={"id": 1}
         )
 
         assert response.success is True
@@ -460,12 +439,14 @@ class TestPhysicsModels:
             epsilon=12.9,  # Dielectric constant
             effective_mass_e=0.067,  # Electron effective mass (m_e units)
             effective_mass_h=0.45,  # Hole effective mass (m_e units)
-            lattice_constant=5.65  # Angstrom
+            lattice_constant=5.65,  # Angstrom
         )
 
         assert gaas.band_gap > 0
         assert gaas.epsilon > 1  # Must be > vacuum permittivity
-        assert 0 < gaas.effective_mass_e < 1  # Effective mass < actual electron mass
+        assert (
+            0 < gaas.effective_mass_e < 1
+        )  # Effective mass < actual electron mass
         assert 0 < gaas.effective_mass_h < 1
 
     def test_material_silicon_realistic_values(self):
@@ -478,7 +459,7 @@ class TestPhysicsModels:
             epsilon=11.7,
             effective_mass_e=0.26,
             effective_mass_h=0.38,
-            lattice_constant=5.43
+            lattice_constant=5.43,
         )
 
         assert si.band_gap > 0
@@ -493,7 +474,7 @@ class TestPhysicsModels:
             material_id=1,
             binding_energy=0.004,  # ~4 meV (typical for GaAs)
             bohr_radius=10.0,  # ~10 nm (typical for GaAs)
-            calculated_at=datetime.utcnow()
+            calculated_at=datetime.utcnow(),
         )
 
         # Binding energy should be much smaller than band gap (<1 eV typically)
@@ -512,7 +493,7 @@ class TestPhysicsModels:
             epsilon=8.9,
             effective_mass_e=0.20,
             effective_mass_h=0.80,
-            lattice_constant=3.19
+            lattice_constant=3.19,
         )
 
         # Wide band gap materials (> 2 eV) for LEDs/UV
@@ -528,7 +509,7 @@ class TestPhysicsModels:
             epsilon=16.8,
             effective_mass_e=0.014,
             effective_mass_h=0.40,
-            lattice_constant=6.48
+            lattice_constant=6.48,
         )
 
         # Narrow band gap materials (< 1 eV) for IR detectors
