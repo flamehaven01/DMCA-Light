@@ -7,15 +7,10 @@ Version: 0.1.0
 [!] CRITICAL: This file is auto-generated. Do not edit manually.
     To modify tests, update the Anvil specification YAML and regenerate.
 """
-import pytest
+
 from fastapi.testclient import TestClient
-from datetime import datetime
 
 from app.main import app
-from app.models import (
-    Material,
-    ExcitonResult,
-)
 
 client = TestClient(app)
 
@@ -34,7 +29,6 @@ class TestHealthEndpoint:
         assert "timestamp" in data["data"]
         assert data["data"]["version"] == "0.1.0"
         assert data["data"]["project"] == "dmca-light-api"
-
 
 
 class TestMaterialsEndpoints:
@@ -83,7 +77,6 @@ class TestMaterialsEndpoints:
 
         assert response.status_code == 404
 
-
     def test_create_material_success(self):
         """Test create_material with valid data"""
         payload = {
@@ -94,7 +87,7 @@ class TestMaterialsEndpoints:
             "epsilon": 12.9,
             "effective_mass_e": 0.067,
             "effective_mass_h": 0.45,
-            "lattice_constant": 5.65
+            "lattice_constant": 5.65,
         }
 
         response = client.post("/api/v1/materials", json=payload)
@@ -124,7 +117,7 @@ class TestMaterialsEndpoints:
             "epsilon": 10.0,
             "effective_mass_e": 0.1,
             "effective_mass_h": 0.1,
-            "lattice_constant": 5.0
+            "lattice_constant": 5.0,
         }
 
         response = client.post("/api/v1/materials", json=payload)
@@ -132,8 +125,6 @@ class TestMaterialsEndpoints:
         # Should accept it (no validation for negative yet)
         # In production, add validator
         assert response.status_code in [200, 201, 422]
-
-
 
 
 class TestCalculationsEndpoints:
@@ -149,7 +140,7 @@ class TestCalculationsEndpoints:
             "epsilon": 12.9,
             "effective_mass_e": 0.067,
             "effective_mass_h": 0.45,
-            "lattice_constant": 5.65
+            "lattice_constant": 5.65,
         }
 
         response = client.post("/api/v1/calculate/exciton", json=payload)
@@ -183,7 +174,7 @@ class TestCalculationsEndpoints:
             "epsilon": 11.7,
             "effective_mass_e": 0.26,
             "effective_mass_h": 0.38,
-            "lattice_constant": 5.43
+            "lattice_constant": 5.43,
         }
 
         response = client.post("/api/v1/calculate/exciton", json=payload)
@@ -203,7 +194,7 @@ class TestCalculationsEndpoints:
         assert response.status_code == 422  # Validation error
 
     def test_calculate_exciton_zero_epsilon(self):
-        """Test calculate_exciton with zero epsilon (should cause division error)"""
+        """Test calculate_exciton handles zero epsilon input."""
         payload = {
             "id": 3,
             "name": "Invalid Material",
@@ -212,15 +203,13 @@ class TestCalculationsEndpoints:
             "epsilon": 0.0,  # Invalid: zero
             "effective_mass_e": 0.1,
             "effective_mass_h": 0.1,
-            "lattice_constant": 5.0
+            "lattice_constant": 5.0,
         }
 
         response = client.post("/api/v1/calculate/exciton", json=payload)
 
         # Should return 500 due to division by zero
         assert response.status_code in [422, 500]
-
-
 
 
 class TestSelectorEndpoints:
@@ -310,8 +299,6 @@ class TestSelectorEndpoints:
             assert band_gaps == sorted(band_gaps)
 
 
-
-
 class TestSecurityAndEdgeCases:
     """Test security and edge cases"""
 
@@ -325,12 +312,12 @@ class TestSecurityAndEdgeCases:
             "epsilon": 10.0,
             "effective_mass_e": 0.1,
             "effective_mass_h": 0.1,
-            "lattice_constant": 5.0
+            "lattice_constant": 5.0,
         }
 
         response = client.post("/api/v1/materials", json=payload)
 
-        # Should either sanitize or accept (validators check for null bytes, not HTML)
+        # Should either sanitize or accept (null byte validator only)
         assert response.status_code in [200, 201, 422]
 
     def test_null_byte_prevention(self):
@@ -343,7 +330,7 @@ class TestSecurityAndEdgeCases:
             "epsilon": 10.0,
             "effective_mass_e": 0.1,
             "effective_mass_h": 0.1,
-            "lattice_constant": 5.0
+            "lattice_constant": 5.0,
         }
 
         response = client.post("/api/v1/materials", json=payload)
@@ -361,7 +348,7 @@ class TestSecurityAndEdgeCases:
             "epsilon": 10.0,
             "effective_mass_e": 0.1,
             "effective_mass_h": 0.1,
-            "lattice_constant": 5.0
+            "lattice_constant": 5.0,
         }
 
         response = client.post("/api/v1/materials", json=payload)
@@ -379,7 +366,7 @@ class TestSecurityAndEdgeCases:
             "epsilon": 10.0,
             "effective_mass_e": 0.1,
             "effective_mass_h": 0.1,
-            "lattice_constant": 5.0
+            "lattice_constant": 5.0,
         }
 
         response = client.post("/api/v1/materials", json=payload)
@@ -411,6 +398,6 @@ class TestRateLimiting:
 
     def test_rate_limit_documentation(self):
         """Verify rate limit is documented in endpoint docstrings"""
-        # This is a documentation test - rate limits are specified but not enforced yet
-        # Future: Implement actual rate limiting with slowapi or fastapi-limiter
+        # Documentation test: rate limits are specified but not enforced yet
+        # Future: enforce limits with slowapi or fastapi-limiter
         assert True  # Placeholder for future rate limit implementation

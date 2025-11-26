@@ -7,11 +7,11 @@ Version: 0.1.0
 [!] CRITICAL: This file is auto-generated. Do not edit manually.
     To modify models, update the Anvil specification YAML and regenerate.
 """
+
 from datetime import datetime
 from typing import Optional, List
-from enum import Enum
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class Material(BaseModel):
@@ -33,27 +33,35 @@ class Material(BaseModel):
 
     lattice_constant: float = Field(...)
 
-    @validator('*', pre=True)
-    def sanitize_string_inputs(cls, v, field):
+    @field_validator("*", mode="before")
+    def sanitize_string_inputs(cls, v, info):
         """Sanitize string inputs to prevent XSS attacks."""
         if isinstance(v, str):
-            # Strip leading/trailing whitespace
-            v = v.strip()
-            # Prevent null bytes
-            if '\x00' in v:
-                raise ValueError(f'{field.name} contains invalid null bytes')
-            # Prevent excessive whitespace
-            if len(v) > 0 and len(v.strip()) == 0:
-                raise ValueError(f'{field.name} cannot be only whitespace')
-        return v
+            if "\x00" in v:
+                raise ValueError(
+                    f"{info.field_name} contains invalid null bytes"
+                )
 
+            stripped = v.strip()
+            if not stripped:
+                raise ValueError(
+                    f"{info.field_name} cannot be only whitespace"
+                )
+
+            return stripped
+        return v
 
     class Config:
         """Pydantic model configuration"""
-        from_attributes = True  # Allow ORM object conversion
-        validate_assignment = True  # Validate on field assignment, not just initialization
-        use_enum_values = True  # Use enum values instead of enum objects in responses
-        str_strip_whitespace = True  # Auto-strip string whitespace
+
+        # Allow ORM object conversion
+        from_attributes = True
+        # Validate on field assignment, not just initialization
+        validate_assignment = True
+        # Use enum values instead of enum objects in responses
+        use_enum_values = True
+        # Auto-strip string whitespace
+        str_strip_whitespace = True
         json_schema_extra = {
             "examples": [
                 {
@@ -64,7 +72,7 @@ class Material(BaseModel):
                     "epsilon": 12.9,
                     "effective_mass_e": 0.067,
                     "effective_mass_h": 0.45,
-                    "lattice_constant": 5.65
+                    "lattice_constant": 5.65,
                 },
                 {
                     "id": 2,
@@ -74,7 +82,7 @@ class Material(BaseModel):
                     "epsilon": 11.7,
                     "effective_mass_e": 0.26,
                     "effective_mass_h": 0.38,
-                    "lattice_constant": 5.43
+                    "lattice_constant": 5.43,
                 },
                 {
                     "id": 3,
@@ -84,8 +92,8 @@ class Material(BaseModel):
                     "epsilon": 8.9,
                     "effective_mass_e": 0.20,
                     "effective_mass_h": 0.80,
-                    "lattice_constant": 3.19
-                }
+                    "lattice_constant": 3.19,
+                },
             ]
         }
 
@@ -103,22 +111,27 @@ class ExcitonResult(BaseModel):
 
     calculated_at: datetime = Field(...)
 
-
     # Foreign key validators
-    @validator('material_id')
+    @field_validator("material_id")
     def validate_material_id(cls, v):
         """Validate foreign key reference to Material.id"""
         if v is not None and v <= 0:
-            raise ValueError('material_id must be a positive integer (valid foreign key)')
+            raise ValueError(
+                "material_id must be a positive integer (valid foreign key)"
+            )
         return v
-
 
     class Config:
         """Pydantic model configuration"""
-        from_attributes = True  # Allow ORM object conversion
-        validate_assignment = True  # Validate on field assignment, not just initialization
-        use_enum_values = True  # Use enum values instead of enum objects in responses
-        str_strip_whitespace = True  # Auto-strip string whitespace
+
+        # Allow ORM object conversion
+        from_attributes = True
+        # Validate on field assignment, not just initialization
+        validate_assignment = True
+        # Use enum values instead of enum objects in responses
+        use_enum_values = True
+        # Auto-strip string whitespace
+        str_strip_whitespace = True
         json_schema_extra = {
             "examples": [
                 {
@@ -127,7 +140,9 @@ class ExcitonResult(BaseModel):
                     "binding_energy": 0.0045,
                     "bohr_radius": 11.2,
                     "calculated_at": "2025-11-26T00:00:00",
-                    "description": "GaAs exciton: ~4.5 meV binding, ~11 nm Bohr radius"
+                    "description": (
+                        "GaAs exciton: ~4.5 meV binding, ~11 nm Bohr radius"
+                    ),
                 },
                 {
                     "id": 2,
@@ -135,7 +150,9 @@ class ExcitonResult(BaseModel):
                     "binding_energy": 0.0147,
                     "bohr_radius": 4.3,
                     "calculated_at": "2025-11-26T00:00:00",
-                    "description": "Si exciton: ~15 meV binding, ~4 nm Bohr radius"
+                    "description": (
+                        "Si exciton: ~15 meV binding, ~4 nm Bohr radius"
+                    ),
                 },
                 {
                     "id": 3,
@@ -143,20 +160,25 @@ class ExcitonResult(BaseModel):
                     "binding_energy": 0.0256,
                     "bohr_radius": 2.8,
                     "calculated_at": "2025-11-26T00:00:00",
-                    "description": "GaN exciton: ~26 meV binding, ~3 nm Bohr radius"
-                }
+                    "description": (
+                        "GaN exciton: ~26 meV binding, ~3 nm Bohr radius"
+                    ),
+                },
             ]
         }
-
 
 
 class PaginatedResponse(BaseModel):
     """Generic paginated response wrapper"""
 
     total: int = Field(..., description="Total number of items")
-    page: int = Field(..., description="Current page number (1-indexed)")
+    page: int = Field(
+        ..., description="Current page number (1-indexed)"
+    )
     page_size: int = Field(..., description="Items per page")
-    items: List[dict] = Field(default_factory=list, description="List of items")
+    items: List[dict] = Field(
+        default_factory=list, description="List of items"
+    )
 
     class Config:
         from_attributes = True
@@ -167,8 +189,12 @@ class ErrorResponse(BaseModel):
 
     error: str = Field(..., description="Error type")
     message: str = Field(..., description="Human-readable error message")
-    details: Optional[dict] = Field(default=None, description="Additional error details")
-    request_id: Optional[str] = Field(default=None, description="Request ID for tracing")
+    details: Optional[dict] = Field(
+        default=None, description="Additional error details"
+    )
+    request_id: Optional[str] = Field(
+        default=None, description="Request ID for tracing"
+    )
 
     class Config:
         from_attributes = True
@@ -177,9 +203,13 @@ class ErrorResponse(BaseModel):
 class SuccessResponse(BaseModel):
     """Standard success response"""
 
-    success: bool = Field(default=True, description="Operation success status")
+    success: bool = Field(
+        default=True, description="Operation success status"
+    )
     message: str = Field(..., description="Success message")
-    data: Optional[dict] = Field(default=None, description="Response data payload")
+    data: Optional[dict] = Field(
+        default=None, description="Response data payload"
+    )
 
     class Config:
         from_attributes = True
