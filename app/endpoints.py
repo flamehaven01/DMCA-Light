@@ -102,7 +102,7 @@ async def list_materials(
     try:
         total = len(materials_store)
         offset = (page - 1) * page_size
-        paginated_items = materials_store[offset: offset + page_size]
+        paginated_items = materials_store[offset : offset + page_size]
 
         return PaginatedResponse(
             total=total,
@@ -332,14 +332,10 @@ async def recommend_solar(
     """
     try:
         materials = [
-            material
-            for material in materials_store
-            if 1.0 <= material.band_gap <= 1.8
+            material for material in materials_store if 1.0 <= material.band_gap <= 1.8
         ]
 
-        materials_sorted = sorted(
-            materials, key=lambda m: abs(m.band_gap - 1.4)
-        )
+        materials_sorted = sorted(materials, key=lambda m: abs(m.band_gap - 1.4))
 
         if top_n is not None:
             materials_sorted = materials_sorted[:top_n]
@@ -389,9 +385,7 @@ async def recommend_led(
     """
     try:
         materials = [
-            material
-            for material in materials_store
-            if 1.8 <= material.band_gap <= 3.5
+            material for material in materials_store if 1.8 <= material.band_gap <= 3.5
         ]
 
         materials_sorted = sorted(materials, key=lambda m: m.band_gap)
