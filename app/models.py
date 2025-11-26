@@ -42,7 +42,9 @@ class Material(BaseModel):
 
             stripped = v.strip()
             if not stripped:
-                raise ValueError(f"{info.field_name} cannot be blank")
+                raise ValueError(
+                    f"{info.field_name} cannot be blank or whitespace only"
+                )
 
             return stripped
         return v
