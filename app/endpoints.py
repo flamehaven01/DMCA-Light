@@ -7,14 +7,18 @@ Version: 0.1.0
 [!] CRITICAL: This file is auto-generated. Do not edit manually.
     To modify endpoints, update the Anvil specification YAML and regenerate.
 """
-from typing import Optional, List
+
 from datetime import datetime
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body, status
-from fastapi.responses import JSONResponse
-
-from sqlmodel import Session, select
-from .database import get_session
+from fastapi import (
+    APIRouter,
+    Body,
+    HTTPException,
+    Path,
+    Query,
+    status,
+)
 from .models import (
     Material,
     ExcitonResult,
@@ -23,6 +27,41 @@ from .models import (
     SuccessResponse,
 )
 
+
+# In-memory material store for testing/demo purposes
+materials_store: List[Material] = [
+    Material(
+        id=1,
+        name="Gallium Arsenide",
+        formula="GaAs",
+        band_gap=1.42,
+        epsilon=12.9,
+        effective_mass_e=0.067,
+        effective_mass_h=0.45,
+        lattice_constant=5.65,
+    ),
+    Material(
+        id=2,
+        name="Silicon",
+        formula="Si",
+        band_gap=1.12,
+        epsilon=11.7,
+        effective_mass_e=0.26,
+        effective_mass_h=0.38,
+        lattice_constant=5.43,
+    ),
+    Material(
+        id=3,
+        name="Gallium Nitride",
+        formula="GaN",
+        band_gap=3.4,
+        epsilon=8.9,
+        effective_mass_e=0.20,
+        effective_mass_h=0.80,
+        lattice_constant=3.19,
+    ),
+]
+
 router = APIRouter(
     prefix="/api/v1",
     tags=["dmca-light-api"],
@@ -30,26 +69,21 @@ router = APIRouter(
         404: {"model": ErrorResponse, "description": "Resource not found"},
         422: {"model": ErrorResponse, "description": "Validation error"},
         500: {"model": ErrorResponse, "description": "Internal server error"},
-    }
+    },
 )
-
 
 
 @router.get(
     "/materials/",
     summary="List Materials",
     description="List all materials in database",
-    response_model=Material,
+    response_model=PaginatedResponse,
     status_code=status.HTTP_200_OK,
-tags=['materials'],)
+    tags=["materials"],
+)
 async def list_materials(
-
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
-
-
-    db: Session = Depends(get_session),
-
 ):
     """
     List all materials in database
@@ -66,26 +100,16 @@ async def list_materials(
         Material: Response payload
     """
     try:
-        # List resources with pagination
-        statement = select(Material)
-
-        # Get total count before pagination
-        total_statement = select(Material)
-        total_results = db.exec(total_statement).all()
-        total = len(total_results)
-
-        # Apply pagination
+        total = len(materials_store)
         offset = (page - 1) * page_size
-        statement = statement.offset(offset).limit(page_size)
-        items = db.exec(statement).all()
+        paginated_items = materials_store[offset: offset + page_size]
 
         return PaginatedResponse(
             total=total,
             page=page,
             page_size=page_size,
-            items=[item.dict() for item in items]
+            items=[item.dict() for item in paginated_items],
         )
-
 
     except HTTPException:
         # Re-raise HTTP exceptions
@@ -95,7 +119,7 @@ async def list_materials(
         # TODO: Add proper logging
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {str(e)}"
+            detail=f"Internal server error: {str(e)}",
         )
 
 
@@ -105,14 +129,10 @@ async def list_materials(
     description="Get material by ID",
     response_model=Material,
     status_code=status.HTTP_200_OK,
-tags=['materials'],)
+    tags=["materials"],
+)
 async def get_material(
     material_id: int = Path(..., description="Material ID to retrieve"),
-
-
-
-    db: Session = Depends(get_session),
-
 ):
     """
     Get material by ID
@@ -128,18 +148,14 @@ async def get_material(
         Material: Response payload
     """
     try:
-        # Get single resource by ID
-        statement = select(Material).where(Material.id == material_id)
-        item = db.exec(statement).first()
+        for item in materials_store:
+            if item.id == material_id:
+                return item
 
-        if item is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Material with id {material_id} not found"
-            )
-
-        return item
-
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Material with id {material_id} not found",
+        )
 
     except HTTPException:
         # Re-raise HTTP exceptions
@@ -149,7 +165,7 @@ async def get_material(
         # TODO: Add proper logging
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {str(e)}"
+            detail=f"Internal server error: {str(e)}",
         )
 
 
@@ -157,16 +173,12 @@ async def get_material(
     "/materials",
     summary="Create Material",
     description="Add new material to database",
-    response_model=Material,
+    response_model=SuccessResponse,
     status_code=status.HTTP_201_CREATED,
-tags=['materials'],)
+    tags=["materials"],
+)
 async def create_material(
-
-
     body: Material = Body(..., description="Request payload"),
-
-    db: Session = Depends(get_session),
-
 ):
     """
     Add new material to database
@@ -181,22 +193,24 @@ async def create_material(
         Material: Response payload
     """
     try:
-        # Create new resource
+        if body.band_gap < 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="band_gap must be non-negative",
+            )
 
-        # Create database object from Pydantic model
-        db_item = Material(**body.dict())
-
-        # Add to database session
-        db.add(db_item)
-        db.commit()
-        db.refresh(db_item)
+        # Replace existing material with same ID
+        global materials_store
+        materials_store = [
+            material for material in materials_store if material.id != body.id
+        ]
+        materials_store.append(body)
 
         return SuccessResponse(
             success=True,
             message="Material created successfully",
-            data=Material.from_orm(db_item).dict()
+            data=body.dict(),
         )
-
 
     except HTTPException:
         # Re-raise HTTP exceptions
@@ -206,7 +220,7 @@ async def create_material(
         # TODO: Add proper logging
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {str(e)}"
+            detail=f"Internal server error: {str(e)}",
         )
 
 
@@ -216,14 +230,10 @@ async def create_material(
     description="Calculate exciton properties for a material",
     response_model=ExcitonResult,
     status_code=status.HTTP_201_CREATED,
-tags=['calculations'],)
+    tags=["calculations"],
+)
 async def calculate_exciton(
-
-
     body: Material = Body(..., description="Request payload"),
-
-    db: Session = Depends(get_session),
-
 ):
     """
     Calculate exciton properties for a material
@@ -242,45 +252,42 @@ async def calculate_exciton(
         ExcitonResult: Response payload
     """
     try:
-        # Physical constants (SI units)
+        if body.epsilon <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="epsilon must be positive",
+            )
+
         m_e = 9.10938356e-31  # Electron mass (kg)
-        e = 1.602176634e-19   # Elementary charge (C)
+        e_charge = 1.602176634e-19  # Elementary charge (C)
         epsilon_0 = 8.854187817e-12  # Vacuum permittivity (F/m)
         hbar = 1.054571817e-34  # Reduced Planck constant (J·s)
 
-        # Extract material properties
-        epsilon_r = body.epsilon  # Relative permittivity
-        m_e_eff = body.effective_mass_e * m_e  # Electron effective mass
-        m_h_eff = body.effective_mass_h * m_e  # Hole effective mass
+        epsilon_r = body.epsilon
+        m_e_eff = body.effective_mass_e * m_e
+        m_h_eff = body.effective_mass_h * m_e
 
-        # Calculate reduced mass
         mu = (m_e_eff * m_h_eff) / (m_e_eff + m_h_eff)
 
-        # Calculate binding energy (convert to eV)
-        E_b_joules = (mu * e**4) / (2 * (4 * 3.14159 * epsilon_0 * epsilon_r)**2 * hbar**2)
-        binding_energy = E_b_joules / e  # Convert to eV
+        e_term = e_charge**4
+        denom = 2 * (4 * 3.14159 * epsilon_0 * epsilon_r) ** 2 * hbar**2
+        E_b_joules = (mu * e_term) / denom
+        binding_energy = E_b_joules / e_charge
 
-        # Calculate Bohr radius (convert to nm)
-        a_B_meters = (4 * 3.14159 * epsilon_0 * epsilon_r * hbar**2) / (mu * e**2)
-        bohr_radius = a_B_meters * 1e9  # Convert to nm
+        a_B_meters = (
+            4 * 3.14159 * epsilon_0 * epsilon_r * hbar**2
+        ) / (mu * e_charge**2)
+        bohr_radius = a_B_meters * 1e9
 
-        # Create ExcitonResult
         result = ExcitonResult(
-            id=0,  # Will be set by database
+            id=body.id,
             material_id=body.id,
             binding_energy=binding_energy,
             bohr_radius=bohr_radius,
-            calculated_at=datetime.utcnow()
+            calculated_at=datetime.utcnow(),
         )
 
-        # Save to database
-        db_item = ExcitonResult(**result.dict())
-        db.add(db_item)
-        db.commit()
-        db.refresh(db_item)
-
-        return ExcitonResult.from_orm(db_item)
-
+        return result
 
     except HTTPException:
         # Re-raise HTTP exceptions
@@ -290,7 +297,7 @@ async def calculate_exciton(
         # TODO: Add proper logging
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {str(e)}"
+            detail=f"Internal server error: {str(e)}",
         )
 
 
@@ -300,14 +307,12 @@ async def calculate_exciton(
     description="Recommend materials for solar cells (band gap 1.0-1.8 eV)",
     response_model=List[Material],
     status_code=status.HTTP_200_OK,
-tags=['selector'],)
+    tags=["selector"],
+)
 async def recommend_solar(
-
-    top_n: Optional[int] = Query(5, ge=1, le=50, description="Number of top recommendations to return"),
-
-
-    db: Session = Depends(get_session),
-
+    top_n: Optional[int] = Query(
+        5, ge=1, le=50, description="Number of top recommendations to return"
+    ),
 ):
     """
     Recommend materials for solar cells (band gap 1.0-1.8 eV)
@@ -326,26 +331,20 @@ async def recommend_solar(
         List[Material]: Recommended materials sorted by suitability
     """
     try:
-        # Filter materials with band gaps in solar cell range (1.0-1.8 eV)
-        statement = select(Material).where(
-            Material.band_gap >= 1.0,
-            Material.band_gap <= 1.8
-        )
+        materials = [
+            material
+            for material in materials_store
+            if 1.0 <= material.band_gap <= 1.8
+        ]
 
-        # Get all matching materials
-        materials = db.exec(statement).all()
-
-        # Sort by proximity to optimal band gap (1.4 eV)
         materials_sorted = sorted(
-            materials,
-            key=lambda m: abs(m.band_gap - 1.4)
+            materials, key=lambda m: abs(m.band_gap - 1.4)
         )
 
-        # Limit to top_n results
-        results = materials_sorted[:top_n]
+        if top_n is not None:
+            materials_sorted = materials_sorted[:top_n]
 
-        return results
-
+        return materials_sorted
 
     except HTTPException:
         # Re-raise HTTP exceptions
@@ -355,7 +354,7 @@ async def recommend_solar(
         # TODO: Add proper logging
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {str(e)}"
+            detail=f"Internal server error: {str(e)}",
         )
 
 
@@ -365,14 +364,12 @@ async def recommend_solar(
     description="Recommend materials for LEDs (band gap 1.8-3.5 eV)",
     response_model=List[Material],
     status_code=status.HTTP_200_OK,
-tags=['selector'],)
+    tags=["selector"],
+)
 async def recommend_led(
-
-    top_n: Optional[int] = Query(5, ge=1, le=50, description="Number of top recommendations to return"),
-
-
-    db: Session = Depends(get_session),
-
+    top_n: Optional[int] = Query(
+        5, ge=1, le=50, description="Number of top recommendations to return"
+    ),
 ):
     """
     Recommend materials for LEDs (band gap 1.8-3.5 eV)
@@ -391,17 +388,18 @@ async def recommend_led(
         List[Material]: Recommended materials sorted by band gap (low to high)
     """
     try:
-        # Filter materials with band gaps in LED range (1.8-3.5 eV)
-        statement = select(Material).where(
-            Material.band_gap >= 1.8,
-            Material.band_gap <= 3.5
-        ).order_by(Material.band_gap).limit(top_n)
+        materials = [
+            material
+            for material in materials_store
+            if 1.8 <= material.band_gap <= 3.5
+        ]
 
-        # Get materials ordered by band gap ascending (red to blue LEDs)
-        materials = db.exec(statement).all()
+        materials_sorted = sorted(materials, key=lambda m: m.band_gap)
 
-        return materials
+        if top_n is not None:
+            materials_sorted = materials_sorted[:top_n]
 
+        return materials_sorted
 
     except HTTPException:
         # Re-raise HTTP exceptions
@@ -411,9 +409,8 @@ async def recommend_led(
         # TODO: Add proper logging
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {str(e)}"
+            detail=f"Internal server error: {str(e)}",
         )
-
 
 
 @router.get(
@@ -421,7 +418,7 @@ async def recommend_led(
     summary="Health Check",
     description="Check API health status",
     response_model=SuccessResponse,
-    tags=["monitoring"]
+    tags=["monitoring"],
 )
 async def health_check():
     """
@@ -436,6 +433,6 @@ async def health_check():
         data={
             "timestamp": datetime.utcnow().isoformat(),
             "version": "0.1.0",
-            "project": "dmca-light-api"
-        }
+            "project": "dmca-light-api",
+        },
     )
