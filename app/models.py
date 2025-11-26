@@ -38,15 +38,11 @@ class Material(BaseModel):
         """Sanitize string inputs to prevent XSS attacks."""
         if isinstance(v, str):
             if "\x00" in v:
-                raise ValueError(
-                    f"{info.field_name} contains invalid null bytes"
-                )
+                raise ValueError(f"{info.field_name} contains invalid null bytes")
 
             stripped = v.strip()
             if not stripped:
-                raise ValueError(
-                    f"{info.field_name} cannot be only whitespace"
-                )
+                raise ValueError(f"{info.field_name} cannot be only whitespace")
 
             return stripped
         return v
@@ -58,9 +54,7 @@ class Material(BaseModel):
         validate_assignment = (
             True  # Validate on field assignment, not just initialization
         )
-        use_enum_values = (
-            True  # Use enum values instead of enum objects in responses
-        )
+        use_enum_values = True  # Use enum values instead of enum objects in responses
         str_strip_whitespace = True  # Auto-strip string whitespace
         json_schema_extra = {
             "examples": [
@@ -150,9 +144,7 @@ class ExcitonResult(BaseModel):
                     "binding_energy": 0.0147,
                     "bohr_radius": 4.3,
                     "calculated_at": "2025-11-26T00:00:00",
-                    "description": (
-                        "Si exciton: ~15 meV binding, ~4 nm Bohr radius"
-                    ),
+                    "description": ("Si exciton: ~15 meV binding, ~4 nm Bohr radius"),
                 },
                 {
                     "id": 3,
@@ -160,9 +152,7 @@ class ExcitonResult(BaseModel):
                     "binding_energy": 0.0256,
                     "bohr_radius": 2.8,
                     "calculated_at": "2025-11-26T00:00:00",
-                    "description": (
-                        "GaN exciton: ~26 meV binding, ~3 nm Bohr radius"
-                    ),
+                    "description": ("GaN exciton: ~26 meV binding, ~3 nm Bohr radius"),
                 },
             ]
         }
@@ -174,9 +164,7 @@ class PaginatedResponse(BaseModel):
     total: int = Field(..., description="Total number of items")
     page: int = Field(..., description="Current page number (1-indexed)")
     page_size: int = Field(..., description="Items per page")
-    items: List[dict] = Field(
-        default_factory=list, description="List of items"
-    )
+    items: List[dict] = Field(default_factory=list, description="List of items")
 
     class Config:
         from_attributes = True
@@ -203,9 +191,7 @@ class SuccessResponse(BaseModel):
 
     success: bool = Field(default=True, description="Operation success status")
     message: str = Field(..., description="Success message")
-    data: Optional[dict] = Field(
-        default=None, description="Response data payload"
-    )
+    data: Optional[dict] = Field(default=None, description="Response data payload")
 
     class Config:
         from_attributes = True
