@@ -7,12 +7,14 @@ Version: 0.1.0
 [!] CRITICAL: This file is auto-generated. Do not edit manually.
     To modify the app, update the Anvil specification YAML and regenerate.
 """
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 import logging
 import sys
+import textwrap
 
 from .endpoints import router
 from .config import settings
@@ -21,9 +23,7 @@ from .config import settings
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
 
@@ -31,90 +31,99 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="DMCA-Light: Exciton Calculator API",
     version="0.1.0",
-    description="""
-# DMCA-Light: Educational Exciton Calculator
+    description=textwrap.dedent(
+        """
+        # DMCA-Light: Educational Exciton Calculator
 
-Educational REST API for calculating exciton properties in semiconductor materials using the Wannier model.
+        Educational REST API for calculating exciton properties in
+        semiconductor materials using the Wannier model.
 
-## Features
+        ## Features
 
-* **Material Database**: Semiconductor materials with band structure properties
-* **Exciton Calculator**: Wannier model for binding energy and Bohr radius
-* **Material Selectors**: Recommend materials for solar cells and LEDs
-* **Educational Focus**: Simplified physics for learning purposes
+        * **Material Database**: Semiconductor materials with band
+          structure properties
+        * **Exciton Calculator**: Wannier model for binding energy and
+          Bohr radius
+        * **Material Selectors**: Recommend materials for solar cells
+          and LEDs
+        * **Educational Focus**: Simplified physics for learning
+          purposes
 
-## Physics Background
+        ## Physics Background
 
-### Wannier Exciton Model
+        ### Wannier Exciton Model
 
-Suitable for direct-gap semiconductors with large dielectric constants:
+        Suitable for direct-gap semiconductors with large dielectric
+        constants:
 
-**Binding Energy**:
-```
-E_b = (μ * e⁴) / (2 * (4π * ε₀ * εᵣ)² * ℏ²)
-```
+        **Binding Energy**:
+        ```
+        E_b = (μ * e⁴) / (2 * (4π * ε₀ * εᵣ)² * ℏ²)
+        ```
 
-**Bohr Radius**:
-```
-a_B = (4π * ε₀ * εᵣ * ℏ²) / (μ * e²)
-```
+        **Bohr Radius**:
+        ```
+        a_B = (4π * ε₀ * εᵣ * ℏ²) / (μ * e²)
+        ```
 
-Where:
-- μ = reduced effective mass
-- εᵣ = relative permittivity (dielectric constant)
-- e = elementary charge
-- ℏ = reduced Planck constant
+        Where:
+        - μ = reduced effective mass
+        - εᵣ = relative permittivity (dielectric constant)
+        - e = elementary charge
+        - ℏ = reduced Planck constant
 
-### Example Results
+        ### Example Results
 
-- **GaAs**: E_b ≈ 4 meV, a_B ≈ 10 nm
-- **Si**: E_b ≈ 14 meV, a_B ≈ 4 nm
-- **GaN**: E_b ≈ 25 meV, a_B ≈ 3 nm
+        - **GaAs**: E_b ≈ 4 meV, a_B ≈ 10 nm
+        - **Si**: E_b ≈ 14 meV, a_B ≈ 4 nm
+        - **GaN**: E_b ≈ 25 meV, a_B ≈ 3 nm
 
-## Quick Start
+        ## Quick Start
 
-### Calculate Exciton Properties
+        ### Calculate Exciton Properties
 
-```python
-import requests
+        ```python
+        import requests
 
-material = {
-    "id": 1,
-    "name": "Gallium Arsenide",
-    "formula": "GaAs",
-    "band_gap": 1.42,
-    "epsilon": 12.9,
-    "effective_mass_e": 0.067,
-    "effective_mass_h": 0.45,
-    "lattice_constant": 5.65
-}
+        material = {
+            "id": 1,
+            "name": "Gallium Arsenide",
+            "formula": "GaAs",
+            "band_gap": 1.42,
+            "epsilon": 12.9,
+            "effective_mass_e": 0.067,
+            "effective_mass_h": 0.45,
+            "lattice_constant": 5.65,
+        }
 
-response = requests.post(
-    "http://localhost:8000/api/v1/calculate/exciton",
-    json=material
-)
-result = response.json()
-print(f"Binding Energy: {result['binding_energy']:.4f} eV")
-print(f"Bohr Radius: {result['bohr_radius']:.2f} nm")
-```
+        response = requests.post(
+            "http://localhost:8000/api/v1/calculate/exciton",
+            json=material,
+        )
+        result = response.json()
+        print(f"Binding Energy: {result['binding_energy']:.4f} eV")
+        print(f"Bohr Radius: {result['bohr_radius']:.2f} nm")
+        ```
 
-### Find Solar Cell Materials
+        ### Find Solar Cell Materials
 
-```python
-response = requests.get(
-    "http://localhost:8000/api/v1/selector/solar?top_n=5"
-)
-materials = response.json()
-for m in materials:
-    print(f"{m['name']}: {m['band_gap']:.2f} eV")
-```
+        ```python
+        response = requests.get(
+            "http://localhost:8000/api/v1/selector/solar?top_n=5"
+        )
+        materials = response.json()
+        for m in materials:
+            print(f"{m['name']}: {m['band_gap']:.2f} eV")
+        ```
 
-## Full Version
+        ## Full Version
 
-This is a simplified educational version. For production-grade calculations with ab initio methods, see **DMCA S++**.
+        This is a simplified educational version. For production-grade
+        calculations with ab initio methods, see **DMCA S++**.
 
-**Contact**: info@flamehaven.space | flamehaven01@gmail.com
-    """,
+        **Contact**: info@flamehaven.space | flamehaven01@gmail.com
+        """
+    ),
     contact={
         "name": "Flamehaven",
         "email": "info@flamehaven.space",
@@ -157,10 +166,7 @@ app.add_middleware(
 )
 
 # Trusted host middleware (security)
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=settings.ALLOWED_HOSTS
-)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
 
 # Include API router
 app.include_router(router)
@@ -169,7 +175,7 @@ app.include_router(router)
 @app.on_event("startup")
 async def startup_event():
     """Application startup event"""
-    logger.info(f"Starting dmca-light-api v0.1.0")
+    logger.info("Starting dmca-light-api v0.1.0")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Debug mode: {settings.DEBUG}")
 
@@ -177,7 +183,7 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Application shutdown event"""
-    logger.info(f"Shutting down dmca-light-api v0.1.0")
+    logger.info("Shutting down dmca-light-api v0.1.0")
 
 
 @app.exception_handler(Exception)
@@ -189,8 +195,8 @@ async def global_exception_handler(request, exc):
         content={
             "error": "InternalServerError",
             "message": "An unexpected error occurred",
-            "details": str(exc) if settings.DEBUG else None
-        }
+            "details": str(exc) if settings.DEBUG else None,
+        },
     )
 
 
@@ -200,9 +206,9 @@ async def root():
     return {
         "project": "dmca-light-api",
         "version": "0.1.0",
-        "description": "Educational REST API for dark matter exciton calculations",
+        "description": "Educational REST API for exciton calculations",
         "docs": "/docs",
-        "health": "/api/v1/health"
+        "health": "/api/v1/health",
     }
 
 
@@ -214,5 +220,5 @@ if __name__ == "__main__":
         host=settings.HOST,
         port=settings.PORT,
         reload=settings.DEBUG,
-        log_level="info"
+        log_level="info",
     )
