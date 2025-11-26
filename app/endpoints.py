@@ -274,9 +274,9 @@ async def calculate_exciton(
         E_b_joules = (mu * e_term) / denom
         binding_energy = E_b_joules / e_charge
 
-        a_B_meters = (
-            4 * 3.14159 * epsilon_0 * epsilon_r * hbar**2
-        ) / (mu * e_charge**2)
+        a_B_meters = (4 * 3.14159 * epsilon_0 * epsilon_r * hbar**2) / (
+            mu * e_charge**2
+        )
         bohr_radius = a_B_meters * 1e9
 
         result = ExcitonResult(

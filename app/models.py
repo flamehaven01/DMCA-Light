@@ -124,14 +124,14 @@ class ExcitonResult(BaseModel):
     class Config:
         """Pydantic model configuration"""
 
-        from_attributes = True  # Allow ORM object conversion
-        validate_assignment = (
-            True  # Validate on field assignment, not just initialization
-        )
-        use_enum_values = (
-            True  # Use enum values instead of enum objects in responses
-        )
-        str_strip_whitespace = True  # Auto-strip string whitespace
+        # Allow ORM object conversion
+        from_attributes = True
+        # Validate on field assignment, not just initialization
+        validate_assignment = True
+        # Use enum values instead of enum objects in responses
+        use_enum_values = True
+        # Auto-strip string whitespace
+        str_strip_whitespace = True
         json_schema_extra = {
             "examples": [
                 {
